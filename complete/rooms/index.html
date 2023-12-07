@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO rooms</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+	  #msg-form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+	  #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
+	  #input:focus { outline: none; }
+	  #msg-form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+
+	  #messages { list-style-type: none; margin: 0; padding: 0; }
+	  #messages > li { padding: 0.5rem 1rem; }
+	  #messages > li:nth-child(odd) { background: #efefef; }
+
+	  #room-list { list-style-type: none; margin: 40px 0 0 0; padding: 0; }
+      #room-list li { padding: 5px 10px; }
+      #room-list li:nth-child(odd) { background: #eee; }
+	  .msgs{ display: none; }
+	  .rooms{ display: none; }
+    </style>
+	  
+	<script src="/socket.io/socket.io.js"></script>
+	
+	<script>
+		const socket = io();
+
+		const msgForm = document.getElementById('msg-form');
+		const input = document.getElementById('m3');
+		const name = document.getElementById('m1');
+		const room = document.getElementById('m2');
+		const roomList = document.getElementById('room-list');
+		const nameForm = document.getElementById('name-form');
+		const roomForm = document.getElementById('room-form');
+		const messages = document.getElementById('messages');
+
+		msgForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			if (input.value) {
+				socket.emit('chat message', { name:name.value, room:room.value, msg:input.value });
+				input.value = '';
+			}
+		});
+
+		socket.on('chat message', (msg) => {
+			const item = document.createElement('li');
+			item.textContent = msg;
+			messages.appendChild(item);
+			window.scrollTo(0, document.body.scrollHeight);
+		});
+
+		nameForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			if (name.value) {
+				socket.emit('set username', name.value);
+				nameForm.style.display = 'none';
+				roomForm.style.display = 'block';
+				roomForm.innerHTML = `Rooms - (${name.value}`;
+				name.value = '';
+			}
+		});
+		
+		roomForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+		  	if (room.value){
+		  		socket.emit('new room', room );
+				room.value = '';
+				roomForm.style.display = 'none';
+				msgForm.style.display = 'block';
+				roomForm.innerHTML = room.value;
+			}
+		});
+		
+		socket.on('rooms', (rooms) => {
+			const item = document.createElement('li');
+			roomList.innerHTML = '';
+			if (rooms!==undefined && Object.getOwnPropertyNames(rooms).length>0){
+				for(let room in rooms){
+					const sockets = rooms[room];
+					const item = document.createElement('li');
+					item.textContent = `<a name=${room} onClick="roomClicked(this)">${room} - ${sockets.join(', ')}</a>`;
+					roomList.appendChild(item);
+				}
+				function roomClicked( item ){
+					console.log(`Room ${item.name} clicked.`);
+					socket.emit('join room', item.name);
+					room = item.name;
+					roomList.style.display = 'none';
+		  			messages.style.display = 'block';
+		  			room.innerHTML = item.name;
+				};
+			
+			}
+		});
+	</script>
+  </head>
+  <body>
+	<div id="room">Rooms</div>
+	<form class="name" id="name-form">
+		<input id="m1" autocomplete="off" /><button>Enter a username</button>
+	</form>
+	<ul id="room-list" class="rooms"></ul>
+	<form class="rooms" id="room-form" action="">
+      <input id="m2" autocomplete="off" /><button>Create and join a new room</button>
+    </form>
+	<div>
+		<ul id="messages" class="msgs"></ul>
+		<form class="msgs" id="msg-form" action="">
+		  <input id="m3" autocomplete="off" /><button>Send</button>
+		</form>
+	</div>
+  </body>
+</html>
