@@ -2,11 +2,12 @@ import express from 'express';
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { inspect } from 'node:util';
 import { Server } from 'socket.io';
 
+const app = express();
 const server = createServer(app);
 const io = new Server(server);
-const app = express();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -16,33 +17,39 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
   console.log('a user connected ');
+
   io.emit('rooms', getRooms('connected'));
-  socket.on('disconnect', function(){
-    console.log('user disconnected');
+  
+  socket.on('disconnect', ( socket ) => {
+    console.log(`${socket.username} disconnected`);
   });
-  socket.on('new room', function(room){
+
+  socket.on('new room', (room) => {
 	  console.log(`A new room is created ${room}`);
 	  socket.room = room;
 	  socket.join(room);
-  	  io.emit('rooms', getRooms('new room'));
+  	io.emit('rooms', getRooms('new room'));
   });
-  socket.on('join room', function(room){
+
+  socket.on('join room', (room) => {
 	  console.log(`A new user joined room ${room}`);
 	  socket.room = room;
 	  socket.join(room);
   	  io.emit('rooms', getRooms('joined room'));
   });
-  socket.on('chat message', function(data){
+
+  socket.on('chat message', (data) => {
     io.in(data.room).emit('chat message', `${data.name}: ${data.msg}` );
   });
-  socket.on('set username', function(name){ 
+
+  socket.on('set username', (name) => { 
 	  console.log(`username set to ${name}(${socket.id})`);
 	  socket.username = name; 
   });
 });
 
-http.listen(3000, function(){
-  console.log('listening on *:3000');
+server.listen(3000, () => {
+  console.log('server running at http://localhost:3000');
 });
 
 function getRooms(msg){
@@ -63,18 +70,18 @@ function getRooms(msg){
 	  if (room===undefined) continue;
 	  const sockets = [];
 	  let roomName = "";
-	  //console.log('getRooms room>>' + util.inspect(room));
+	  console.log(`getRooms room>>${inspect(room)}`);
 	  for(let socketId in room.sockets){
 		  const socket = nsp.connected[socketId];
 		  if (socket===undefined || socket.username===undefined || socket.room===undefined) continue;
-		  //console.log(`getRooms socket(${socketId})>>${socket.username}:${socket.room}`);
+		  console.log(`getRooms socket(${socketId})>>${socket.username}:${socket.room}`);
 		  sockets.push(socket.username);
 		  if (roomName=="") roomName = socket.room;
 	  }
 	  if (roomName!="") list[roomName] = sockets;
   }
 	
-  console.log(`getRooms: ${msg} >>` + util.inspect(list));
+  console.log(`getRooms: ${msg} >>${inspect(list)}`);
 	
   return list;
 }
