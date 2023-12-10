@@ -14,22 +14,24 @@
 	  #messages > li { padding: 0.5rem 1rem; }
 	  #messages > li:nth-child(odd) { background: #efefef; }
 
-	  #room-list { list-style-type: none; margin: 40px 0 0 0; padding: 0; }
+	  #room-list { list-style-type: none; margin: 0; padding: 0; display: none; }
       #room-list li { padding: 5px 10px; }
       #room-list li:nth-child(odd) { background: #eee; }
 
+	  #room-name { font-weight: bold; font-size: larger; padding: 0.5rem 1rem; display: none; background: #666; color: #fff; }
+
 	  .msgs{ display: none; }
 	  .rooms{ display: none; }
-
-	  
     </style>
   </head>
   <body>
-	<div id="room">Rooms</div>
+	<div id="room-name">Rooms</div>
+	<div id="room-list">
+		<ul class="rooms"></ul>
+	</div>
 	<form class="name" id="name-form">
 		<input id="m1" autocomplete="off" /><button>Enter a username</button>
 	</form>
-	<ul id="room-list" class="rooms"></ul>
 	<form class="rooms" id="room-form" action="">
       <input id="m2" autocomplete="off" /><button>Create and join a new room</button>
     </form>
@@ -43,6 +45,7 @@
 	
 	<script>
 		const socket = io();
+		const loginData = {};
 
 		const nameForm = document.getElementById('name-form');
 		const roomForm = document.getElementById('room-form');
@@ -52,17 +55,19 @@
 		const room = document.getElementById('m2');
 		const msg = document.getElementById('m3');
 
+		const roomName = document.getElementById('room-name');
 		const roomList = document.getElementById('room-list');
 		
 		const messages = document.getElementById('messages');
 
+		setMode( 'name' );
+
 		nameForm.addEventListener('submit', (e) => {
 			e.preventDefault();
 			if (name.value) {
+				loginData.name = name.value;
 				socket.emit('set username', name.value);
-				nameForm.style.display = 'none';
-				roomForm.style.display = 'flex';
-				//roomForm.innerHTML = `Rooms - (${name.value}`;
+				setMode('room');
 				name.value = '';
 			}
 		});
@@ -70,11 +75,10 @@
 		roomForm.addEventListener('submit', (e) => {
 			e.preventDefault();
 		  	if (room.value){
+				loginData.room = room.value;
 		  		socket.emit('new room', room.value );
-				//room.value = '';
-				roomForm.style.display = 'none';
-				msgForm.style.display = 'flex';
-				//roomForm.innerHTML = room.value;
+				setMode('messages');
+				roomName.innerHTML = `${room.value} - messages`;
 			}
 		});
 		
@@ -85,25 +89,16 @@
 				for(let room in rooms){
 					const sockets = rooms[room];
 					const item = document.createElement('li');
-					item.textContent = `<a name=${room} onClick="roomClicked(this)">${room} - ${sockets.join(', ')}</a>`;
+					item.innerHTML = `<a href="#" name="${room}" onclick="roomClicked(this)">${room} - ${sockets.join(', ')}</a>`;
 					roomList.appendChild(item);
-				}
-				function roomClicked( item ){
-					console.log(`Room ${item.name} clicked.`);
-					socket.emit('join room', item.name);
-					room = item.name;
-					roomList.style.display = 'none';
-		  			messages.style.display = 'flex';
-		  			room.innerHTML = item.name;
-				};
-			
+				}		
 			}
 		});
 
 		msgForm.addEventListener('submit', (e) => {
 			e.preventDefault();
 			if (m3.value) {
-				socket.emit('chat message', { name:name.value, room:room.value, msg:m3.value });
+				socket.emit('chat message', { name:loginData.name, room:loginData.room, msg:m3.value });
 				m3.value = '';
 			}
 		});
@@ -114,6 +109,23 @@
 			messages.appendChild(item);
 			window.scrollTo(0, document.body.scrollHeight);
 		});
+
+		function roomClicked( item ){
+			console.log(`Room ${item.name} clicked.`);
+			loginData.room = item.name;
+			socket.emit('join room', item.name);
+			roomName.innerHTML = `${item.name} - messages`;
+			setMode( 'messages' );
+		};
+
+		function setMode( mode ){
+			roomName.style.display = (mode == 'name') ? 'none' : 'block';
+			nameForm.style.display = (mode == 'name') ? 'flex' : 'none' ;
+			roomList.style.display = (mode == 'room') ? 'block' : 'none';
+			roomForm.style.display = (mode == 'room') ? 'flex' : 'none';
+			msgForm.style.display = (mode == 'messages') ? 'flex' : 'none';
+			messages.style.display = (mode == 'messages') ? 'block' : 'none';
+		}
 	</script>
   </body>
 </html>
