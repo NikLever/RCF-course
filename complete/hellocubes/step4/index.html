@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="../../../images/3jsicon.svg" />
+    <title>HelloCubes - step 3</title>
+    <style>
+      body { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "../../../node_modules/three/build/three.module.js",
+          "three/addons/": "../../../node_modules/three/examples/jsm/"
+        }
+      }
+      </script>
+      <script src="/socket.io/socket.io.js"></script>
+      <script  type="module"> 
+        import { Game } from "./Game.js";
+      
+        window.game = new Game();
+      </script>
+  </body>
+</html>

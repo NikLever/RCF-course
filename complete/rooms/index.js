@@ -54,27 +54,6 @@ server.listen(3000, () => {
 
 function getRooms(msg){
   const rooms = io.sockets.adapter.rooms;
-  /*const rooms = [];
-  const keys = Object.keys(io.sockets.sockets);
-  console.log(`getRooms: ${msg} keys:${JSON.stringify(keys)}`);
-  
-  keys.forEach( key => {
-    const socket = io.sockets[key];
-    if (socket && socket.rooms){
-      const roomKeys = Object.keys(socket.rooms);
-      roomKeys.forEach( roomKey => {
-        const room = socket.rooms[roomKey];
-        if ( rooms.indexOf( room ) == -1) rooms.push( room );
-      })
-    }
-  });*/
-
-  /*Returns data in this form
-  {
-    'roomid1': { 'socketid1', socketid2', ...},
-    ...
-  }
-  */
   console.log('getRooms rooms>>' + inspect(rooms));
 
   const list = {};
