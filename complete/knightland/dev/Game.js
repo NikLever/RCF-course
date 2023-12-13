@@ -2,14 +2,12 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
-import { Player } from './Player.js'
-//import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { RecastHelper } from '../../../libs/recast/RecastHelper.js'
 
 export class Game{
 	constructor(){
         this.debug = false;
-
-        this.clock = new THREE.Clock();
 
         this.initScene();
         
@@ -57,34 +55,32 @@ export class Game{
                 if (child.isMesh){
                     child.material.depthTest = true;
                     child.material.depthWrite = true;
-                    child.material.metalness = 0;
-                    child.material.roughness = 1;
+                    //child.frustumCulled = false;
                 }
+
                 if (child.name == "CamStart"){
-                    const pos = new THREE.Vector3();
-                    child.getWorldPosition(pos);
+                    const pos = new THREE.Vector3(11.89, 3.22, 4.19);
+                    //child.getWorldPosition(pos);
+                    //pos.y = 8;
                     this.camera.position.copy(pos);
-                }else if (child.name == "CamTarget"){
-                    const geometry = new THREE.CylinderGeometry(0.2, 0.3, 1.5, 12, 1, false).translate(0, 0.75, 0);
-                    const material = new THREE.MeshStandardMaterial({color: 0x993366 });
-                    this.player = new Player( geometry, material );
-                    const pos = new THREE.Vector3();
-                    child.getWorldPosition(pos);
-                    this.scene.add(this.player);
-                    this.player.position.copy(pos);
-                    pos.y += 2;
-                    this.camera.lookAt(pos);
-                    this.player.attach(this.camera);
-                    if (this.navmesh) this.player.userData.navmesh = this.navmesh;
-                    this.player.userData.camera = this.camera;
-                }else if (child.name == "NavMesh"){
-                    this.navmesh = child;
-                    child.material.visible = false;
-                    if (this.player) this.player.userData.navmesh = this.navmesh;
+                    const controls = new OrbitControls( this.camera, this.renderer.domElement );
+                    //controls.target.y = 1;
+                    //controls.update();
                 }
-            })
+
+                const helper = new RecastHelper('../../../libs/recast/recast.wasm');
+                    helper.createNavMesh(this.scene, {
+                        cellSize: 0.03,
+                        regionMinSize: 0.5,
+                        agentRadius: 0.3,
+                        agentHeight: 1.5
+                        }).then( (mesh) => { if (mesh){
+                            this.scene.add( mesh );
+                        }
+                    });  
+                })
             
-                
+                    
             //loadingBar.visible = false;
             
             //update();
@@ -154,8 +150,6 @@ export class Game{
 
     render(){
         this.renderer.render( this.scene, this.camera );
-        const dt = this.clock.getDelta();
-        if (this.player) this.player.update(dt);
     }
 
     resize(){
