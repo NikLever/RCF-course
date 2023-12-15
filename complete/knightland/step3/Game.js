@@ -19,6 +19,27 @@ export class Game{
         this.prevMousePos = new THREE.Vector2();
         this.tmpVec2 = new THREE.Vector2();
 
+        window.addEventListener('mousedown', (evt) => {
+            this.tmpQuat.copy(this.camera.quaternion);
+            this.prevMousePos.set( evt.clientX, evt.clientY );
+            this.mouseDown = true;
+        });
+
+        window.addEventListener('mouseup', () => {
+            this.camera.quaternion.copy(this.tmpQuat);
+            this.mouseDown = false;
+        });
+
+        window.addEventListener('mousemove', (evt) => {
+            if (this.mouseDown){
+                this.tmpVec2.set( evt.clientX, evt.clientY ).sub( this.prevMousePos );
+                console.log(this.tmpVec2);
+                this.camera.rotateY( (this.tmpVec2.x > 0) ? 0.03 : -0.03 );
+                //this.camera.rotateX( (this.tmpVec2.y > 0) ? 0.01 : -0.01 );
+                this.prevMousePos.set( evt.clientX, evt.clientY );
+            }
+        })
+
         window.addEventListener('resize', this.resize.bind(this) );
 
         this.renderer.setAnimationLoop( this.render.bind(this) );
