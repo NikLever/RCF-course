@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="../assets/icon.svg" />
+    <title>Knightland - step 6</title>
+    <style>
+      body { margin: 0; }
+      #logo { display: flex; position: absolute; top: 10px; width: 100%; max-height: 25%;
+        transition-property: width; transition-duration: 1s; transition-timing-function: ease-in; transition-delay: 2s; }
+      #arrow-left { display: flex; position: absolute; left: 10px; height: 100%; transform: scaleX(-100%); max-width: 10%; }
+      #arrow-right { display: flex; position: absolute; right: 10px; height: 100%; max-width: 10%; }
+      #choose-btn { display: flex; position: absolute; bottom: 10px; width: 100%; max-height: 8%; }
+      img { width: 100%; object-fit: contain; }
+    </style>
+  </head>
+  <body>
+    <div id="logo"><img src="../assets/logo.png" /></div>
+    <div id="choose">
+      <div id="arrow-left"><img src="../assets/arrow.png" /></div>
+      <div id="arrow-right"><img src="../assets/arrow.png" /></div>
+      <div id="choose-btn"><img src="../assets/select.png" /></div>
+    </div>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "../../../node_modules/three/build/three.module.js",
+          "three/addons/": "../../../node_modules/three/examples/jsm/"
+        }
+      }
+      </script>
+      <script  type="module"> 
+        import { Game } from "./Game.js";
+      
+        window.game = new Game();
+      </script>
+  </body>
+</html>

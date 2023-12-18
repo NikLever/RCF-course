@@ -6,9 +6,13 @@
     <title>Knightland - dev</title>
     <style>
       body { margin: 0; }
+      .webgl{
+        display: block;
+      }
     </style>
   </head>
   <body>
+    <canvas class="webgl"></canvas>
     <script type="importmap">
       {
         "imports": {
@@ -17,10 +21,6 @@
         }
       }
       </script>
-      <script  type="module"> 
-        import { Game } from "./Game.js";
-      
-        window.game = new Game();
-      </script>
+      <script src="./index.js" type="module"></script>
   </body>
 </html>
