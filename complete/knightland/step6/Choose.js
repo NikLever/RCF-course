@@ -16,6 +16,7 @@ export class Choose{
         this.scene = game.scene;
         this.player = game.player;
         this.camera = game.camera;
+        this.game = game;
 
         this.init(game.scene, game.camera);
     }
@@ -103,12 +104,15 @@ export class Choose{
             this.player.mixer = this.mixer;
             this.player.visible = true;
             this.player.attach(this.camera);
+            this.game.initSocket();
         }else{
             return;
         }
         const panel = document.getElementById("choose");
         panel.style.display = "none";
         this.mesh.visible = false;
+        const logo = document.getElementById('logo');
+        logo.style.top = "-200px";
     }
 
     updateAvatar(inc){

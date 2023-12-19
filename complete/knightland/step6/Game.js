@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
 import { Player } from './Player.js'
+import { Remote } from './Remote.js'
 import { Choose } from './Choose.js'
 import { LoadingBar } from '../../../libs/LoadingBar.js'
 
@@ -57,7 +58,7 @@ export class Game{
         const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
         pmremGenerator.compileEquirectangularShader();
         
-        loader.load( '../assets/venice_sunset_1k.hdr', ( texture ) => {
+        loader.load( 'assets/venice_sunset_1k.hdr', ( texture ) => {
           const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
           pmremGenerator.dispose();
     
@@ -101,7 +102,7 @@ export class Game{
                     this.player.visible = false;
                     const pos = new THREE.Vector3();
                     child.getWorldPosition(pos);
-                    this.scene.add(this.player);
+                    //this.scene.add(this.player);
                     this.player.position.copy(pos);
                     pos.y += 2;
                     this.camera.lookAt(pos);
@@ -147,6 +148,7 @@ export class Game{
                 const name = names[ Math.floor( Math.random() * names.length ) ];          
                 //if (this.player) this.player.cloneGLTF(gltf, name );
                 this.choose = new Choose(this);
+                this.loadingBar.visible = false;
           },
           // called while loading is progressing
           (xhr)=>{
@@ -160,6 +162,64 @@ export class Game{
           }  
         );
       }
+
+    initSocket(){
+        const socket = io();
+
+        this.remotePlayers = [];
+
+        if (socket){
+
+          this.player.initSocket(socket);
+
+          this.socket = socket;
+            //The socket is initialized in the Player constructor
+            this.socket.on('remoteData', (data) => {
+                //Create and delete remote players
+                //console.log( `remoteData: ${JSON.stringify(data)}`);
+                this.remotePlayers.forEach( player => player.userData.updated = false );
+                data.forEach( packet => {
+                    if (packet.id != this.player.userData.id){
+                        const result = this.remotePlayers.filter( (remote) => remote.userData.id == packet.id );
+                        if (result.length > 0){
+                            const remote = result[0];
+                            remote.remoteUpdate(packet);
+                        }else{
+                            const remote = new Remote(this.scene, packet, this.characters);
+                            this.remotePlayers.push(remote);
+                        }
+                    }
+                });
+
+                const markForDeletion = [];
+
+                this.remotePlayers.forEach( player => {
+                    if (!player.userData.updated) markForDeletion.push(player)
+                });
+
+                while( markForDeletion.length > 0){
+                    const player = markForDeletion.pop();
+                    this.deletePlayer( player );
+                }
+            });
+
+            this.socket.on('deletePlayer', (data) => {
+                console.log( `deletePlayer: ${data.id}`);
+                const result = this.remotePlayers.filter( (player) => player.userData.id == data.id );
+                if (result.length > 0){
+                    this.deletePlayer( result[0] );
+                }
+            } );
+        }
+    }
+
+    deletePlayer( player ){
+      const index = this.remotePlayers.indexOf(player);
+      if (index!=-1){
+          this.remotePlayers.splice(index, 1);
+          this.scene.remove(player);
+      }
+    }
 
     initScene(){
 
@@ -213,6 +273,9 @@ export class Game{
         const dt = this.clock.getDelta();
         if (this.choose) this.choose.update(dt);
         if (this.player) this.player.update(dt);
+        if (this.remotePlayers){
+          this.remotePlayers.forEach( remote => { remote.update(dt); });
+        }
     }
 
     resize(){

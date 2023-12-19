@@ -1,27 +1,53 @@
-import { Group, Raycaster, Vector3, AnimationMixer, 
-         TextureLoader, PlaneGeometry, MeshBasicMaterial, Mesh, 
-         PointLight, PointLightHelper} from 'three';
-import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { Raycaster, Vector3, PointLight } from 'three';
+import { Avatar } from "./Avatar.js"
 
-export class Player extends Group{
+export class Player extends Avatar{
     constructor( scene ){
-        super();
+        super( scene );
 
-        this.scene = scene;
         this.raycaster = new Raycaster();
         this.down = new Vector3(0, -1, 0);
         this.tmpVec = new Vector3();
         this.tmpPos = new Vector3();
         this.tmpPos2 = new Vector3();
-        this.layers.enable(1);
 
         const light = new PointLight( 0xFFFFFF, 8 );
         light.position.set(-0.5, 1.5, -0.75);
         this.add(light);
 
-        this.createFloorShadow()
-
         this.addKeyboardControl();
+    }
+
+    initSocket(socket){
+        //console.log("PlayerLocal.initSocket");
+        this.socket = socket;
+
+        this.socket.emit('init', { 
+            m: this.name,
+            x: this.position.x,
+            y: this.position.y,
+            z: this.position.z,
+            h: this.rotation.y
+        });
+
+        this.socket.on('setId', (data)=>{
+            this.userData.id = data.id;
+        })
+
+        return this.socket;
+    }
+
+    updateSocket(){
+        if (this.socket !== undefined){
+            //console.log(`Player.updateSocket - a:${this.actionName}, h:${this.rotation.y.toFixed(1)}, x:${this.position.x.toFixed(1)}, y:${this.position.y.toFixed(1)}, z:${this.position.z.toFixed(1)})`);
+            this.socket.emit('update', {
+                a: this.actionName,
+                x: this.position.x,
+                y: this.position.y,
+                z: this.position.z,
+                h: this.rotation.y
+            })
+        }
     }
 
     addKeyboardControl(){
@@ -64,18 +90,6 @@ export class Player extends Group{
         });
     }
 
-    createFloorShadow(){
-        const tex = new TextureLoader().setPath('../assets/').load( 'floorshadow.png' );
-
-        const material = new MeshBasicMaterial( { map: tex, transparent: true, opacity: 0.5 });
-        const geometry = new PlaneGeometry(1,1).rotateX( -Math.PI/2 );
-
-        const mesh = new Mesh( geometry, material );
-        mesh.position.y = 0.01;
-
-        this.add( mesh )
-    }
-
     onPath(align = true, offset){
         if (!this.userData.navmesh) return;
 
@@ -105,40 +119,9 @@ export class Player extends Group{
         return false;
     }
 
-    cloneGLTF(gltf, childName){
-	
-        this.name = childName;
-        const child = gltf.scene.getObjectByName( childName );
-		const model = SkeletonUtils.clone( child );
-
-        this.mixer = new AnimationMixer( model );
-        this.add(model);
-
-        this.animations = {};
-
-        gltf.animations.forEach( anim => {
-            if (anim.name.startsWith(this.name)) this.animations[anim.name] = anim;
-        });
-
-        this.action = "Idle";
-	}
-
-    set action(name){
-		if ( this.actionName == name ) return;
-				
-		const clip = this.animations[`${this.name}${name}`];
-
-		if (clip!==undefined){
-			const action = this.mixer.clipAction( clip );
-			action.reset();
-			this.actionName = name;
-			action.play();
-			if (this.curAction) this.curAction.crossFadeTo(action, 0.5);
-			this.curAction = action;
-		}
-	}
-
     update(dt){
+        super.update(dt);
+
         if ( this.userData.move ){
             this.dt = dt;
             //Get current position so we can restore it if player goes off path via a move
@@ -165,6 +148,6 @@ export class Player extends Group{
 
         if (this.helper) this.helper.update();
 
-        if (this.mixer) this.mixer.update(dt);
+        this.updateSocket();
     }
 }
