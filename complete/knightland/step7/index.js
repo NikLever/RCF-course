@@ -36,6 +36,7 @@ io.on('connection', (socket) => {
 	socket.on('init', (data) => {
 		console.log(`socket.init model:${data.m}`);
 		socket.userData.model = data.m;
+    socket.userData.name = data.n;
 		socket.userData.x = data.x;
 		socket.userData.y = data.y;
 		socket.userData.z = data.z;
@@ -60,6 +61,7 @@ setInterval(() => {
       pack.push({
         id: socket.id,
         m: socket.userData.model,
+        n: socket.userData.name,
         x: socket.userData.x,
         y: socket.userData.y,
         z: socket.userData.z,

@@ -150,6 +150,14 @@ export class Game{
                 this.choose = new Choose(this);
                 this.initSocket();
                 this.loadingBar.visible = false;
+                const overlay = document.getElementById("overlay");
+                if (overlay){
+                  overlay.addEventListener("transitionend", () => {
+                    console.log("Game: overlay transition ended");
+                    overlay.style.display = "none";
+                  });
+                  overlay.style.opacity = 0;
+                }
           },
           // called while loading is progressing
           (xhr)=>{
@@ -164,6 +172,18 @@ export class Game{
         );
       }
 
+    positionPlayer(){
+      const posAttr = this.navmesh.geometry.getAttribute("position");
+      const pos = new THREE.Vector3();
+      const index = Math.floor(Math.random() * posAttr.count);
+      pos.x = posAttr.getX(index);
+      pos.y = posAttr.getY(index);
+      pos.z = posAttr.getZ(index);
+      this.navmesh.localToWorld(pos);
+      //this.player.worldToLocal(pos);
+      this.player.position.copy(pos);
+    }
+
     initSocket(){
         const socket = io();
 
@@ -174,6 +194,11 @@ export class Game{
           //this.player.initSocket(socket);
 
           this.socket = socket;
+
+          this.socket.on('setId', (data)=>{
+            this.player.userData.id = data.id;
+          });
+
             //The socket is initialized in the Player constructor
             this.socket.on('remoteData', (data) => {
                 //Create and delete remote players

@@ -1,5 +1,6 @@
 import { Group, AnimationMixer, TextureLoader, PlaneGeometry, MeshBasicMaterial, Mesh } from 'three';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { NameTag } from './NameTag.js';
 
 export class Avatar extends Group{
     constructor( scene ){
@@ -7,6 +8,8 @@ export class Avatar extends Group{
 
         this.scene = scene;
         scene.add(this);
+
+        this.heights = { Archer: 1.9, Knight: 1.8, Mage: 2.1, Paladin: 1.7, Peasant: 1.9, Soldier: 2.0 }
 
         this.createFloorShadow();
     }
@@ -21,6 +24,12 @@ export class Avatar extends Group{
         mesh.position.y = 0.01;
 
         this.add( mesh )
+    }
+
+    addNameTag(name){
+        this.nameTag = new NameTag(name);
+        this.nameTag.position.y = this.heights[this.name];
+        this.add( this.nameTag );
     }
 
     cloneGLTF(gltf, childName){
@@ -56,7 +65,8 @@ export class Avatar extends Group{
         }
     }
 
-    update(dt){
+    update(dt, camera){
         if (this.mixer) this.mixer.update(dt);
+        if (this.nameTag && camera) this.nameTag.update( camera.position );
     }
 }

@@ -5,6 +5,7 @@ export class Remote extends Avatar{
         super(scene);
 
         this.cloneGLTF( characters, packet.m );
+        this.addNameTag( packet.n );
 
         this.userData.id = packet.id;
 

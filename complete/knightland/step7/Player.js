@@ -25,18 +25,13 @@ export class Player extends Avatar{
         this.socket = socket;
 
         this.socket.emit('init', { 
+            n: this.userName,
             m: this.name,
             x: this.position.x,
             y: this.position.y,
             z: this.position.z,
             h: this.rotation.y
         });
-
-        this.socket.on('setId', (data)=>{
-            this.userData.id = data.id;
-        })
-
-        return this.socket;
     }
 
     updateSocket(){
@@ -121,6 +116,26 @@ export class Player extends Avatar{
         return false;
     }
 
+    checkRemoteCollision(){
+        if (!this.game || !this.game.remotePlayers) return false;
+        
+        const pos = new Vector3();
+        const remotePos = new Vector3();
+        this.getWorldPosition(pos);
+
+        let result = false;
+        
+        this.game.remotePlayers.forEach( remote => {
+            remote.getWorldPosition(remotePos);
+            if (remotePos.distanceToSquared(pos)<0.5){
+                result = true;
+                return;
+            }
+        });
+
+        return result;
+    }
+
     updateSeparation(dt){
         if (!this.game.remotePlayers) return;
         const pos3 = new Vector3();
@@ -135,13 +150,23 @@ export class Player extends Avatar{
             a.copy(pos2);
             b.set(pos3.x, pos3.z);
             a.sub(b);
-            if (a.length() < 2) close.add(a);
+            const length = a.length();
+            if (length < 2){
+                this.userData.move.forward *= 0.97;
+                close.add(a);
+            }
         });
 
-        this.velocity.add(close.multiplyScalar(0.01 * dt));
-
-        this.position.x += this.velocity.x;
-        this.position.z += this.velocity.y;
+        if (close.length()>0){
+            close.normalize();
+            pos3.set(close.x, 0, close.y);
+            this.worldToLocal(pos3);
+            if (pos3.x>0){
+                this.rotateY(dt*0.3);
+            }else{
+                this.rotateY(-dt*0.3);
+            }
+        }
     }
 
     update(dt){
@@ -155,10 +180,16 @@ export class Player extends Avatar{
                 const speed = dt * 2 * this.userData.move.forward;
                 this.translateZ( speed );
                 if (this.onPath(true, speed)){
-                    this.action = "Walk";
-                    //this.updateSeparation(dt);
+                    if (this.checkRemoteCollision()){
+                        this.userData.move.forward = 0;
+                        this.action = "Idle";
+                        this.position.copy(this.tmpPos);
+                    }else{
+                        this.action = "Walk";
+                        this.updateSeparation(dt);
+                    }
                 }else{
-                    this.velocity.set(0, 0);
+                    this.userData.move.forward = 0;
                     this.action = "Idle";
                     this.position.copy(this.tmpPos);
                 }

@@ -83,7 +83,7 @@ export class Choose{
         this.avatar.position.copy(pos);
         this.avatar.translateZ(1.5);
         this.avatar.translateX(-0.05);//-0.1);
-        this.avatar.translateY(-0.35);
+        this.avatar.translateY(-0.3);
         const scale = 0.3;
         this.avatar.scale.set(scale, scale, scale);
         scene.add(this.avatar);
@@ -92,6 +92,23 @@ export class Choose{
     }
 
     selectAvatar(){
+        const input = document.querySelector('[name="name"]'); 
+
+        if (input.value==null || input.value==""){
+            input.style.border = "red solid 4px";
+            const message = document.getElementById("instructions");
+            message.innerText = "Please enter a username";
+            message.style.color = "red"; 
+
+            setTimeout( ()=>{
+                input.style.border = "black solid 1px";
+                message.innerText = "Use the arrow buttons to select an avatar. Enter your username then press the Select button.";
+                message.style.color = "brown"; 
+            }, 2000);
+
+            return;
+        }
+
         if (this.character){
             this.character.position.set( 0, 0, 0 );
             this.character.quaternion.copy(this.characters.scene.children[0].quaternion);
@@ -99,12 +116,15 @@ export class Choose{
             this.player.add(this.character);
             this.player.curAction = this.curAction;
             this.player.actionName = this.actionName;
+            this.player.userName = input.value;
             this.player.name = this.name;
             this.player.animations = this.animations;
             this.player.mixer = this.mixer;
             this.player.visible = true;
             this.player.attach(this.camera);
             this.player.initSocket(this.game.socket);
+            this.player.addNameTag( input.value );
+            this.game.positionPlayer();
         }else{
             return;
         }
@@ -113,6 +133,8 @@ export class Choose{
         this.mesh.visible = false;
         const logo = document.getElementById('logo');
         logo.style.top = "-200px";
+        const selectBtn = document.getElementById('choose-btn');
+        selectBtn.style.display = "none";
     }
 
     updateAvatar(inc){
