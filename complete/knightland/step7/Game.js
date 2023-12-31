@@ -5,11 +5,22 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
 import { Player } from './Player.js'
 import { Remote } from './Remote.js'
 import { Choose } from './Choose.js'
+import { CameraPath } from './CameraPath.js'
 import { LoadingBar } from '../../../libs/LoadingBar.js'
+
+const states = {
+  CHOOSE: 1,
+  CAMERAPATH: 2,
+  DEFAULT: 3,
+  CHAT: 4,
+  GAME: 5
+}
 
 export class Game{
 	constructor(){
         this.debug = false;
+
+        this.state = states.CHOOSE;
 
         this.clock = new THREE.Clock();
 
@@ -18,6 +29,7 @@ export class Game{
         this.initScene();
 
         this.tmpQuat = new THREE.Quaternion(); 
+        this.tmpVec3 = new THREE.Vector3();
         
         this.mouseDown = false;
         this.prevMousePos = new THREE.Vector2();
@@ -294,13 +306,38 @@ export class Game{
             } );
     }
 
+    initCameraPath(){
+      this.cameraPath = new CameraPath( new THREE.Vector3(this.camera.position.x, 35, this.camera.position.z), this.camera.position, 40, Date.now() );
+      this.state = states.CAMERAPATH;
+      this.tmpVec3.copy( this.player.position );
+      this.tmpVec3.y += 2;
+    }
+
     render(){
         this.renderer.render( this.scene, this.camera );
         const dt = this.clock.getDelta();
-        if (this.choose) this.choose.update(dt);
         if (this.player) this.player.update(dt);
         if (this.remotePlayers){
           this.remotePlayers.forEach( remote => { remote.update(dt); });
+        }
+        switch(this.state){
+          case states.CHOOSE:
+            if (this.choose) this.choose.update(dt);
+            break;
+          case states.CAMERAPATH:
+            if (this.cameraPath && this.cameraPath.startTime){
+              const elapsedTime = Date.now() - this.cameraPath.startTime;
+              if (elapsedTime < 6000){
+                this.cameraPath.getPoint( elapsedTime/6000, this.camera.position );
+              }else{
+                this.camera.position.copy(this.cameraPath.end );
+                this.state = states.DEFAULT;
+              }
+              this.camera.lookAt( this.tmpVec3 );
+            }else{
+              this.state = states.DEFAULT;
+            }
+            break;
         }
     }
 

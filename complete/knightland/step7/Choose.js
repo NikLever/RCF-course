@@ -125,6 +125,7 @@ export class Choose{
             this.player.initSocket(this.game.socket);
             this.player.addNameTag( input.value );
             this.game.positionPlayer();
+            this.game.initCameraPath();
         }else{
             return;
         }
